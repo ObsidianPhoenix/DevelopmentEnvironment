@@ -11,12 +11,12 @@ services:
     # Bring up the latest SQL Server
     sql:
         container_name: sql
-        image: mcr.microsoft.com/mssql/server:latest
+        image: mcr.microsoft.com/azure-sql-edge:latest
         ports:
             - 1433:1433
         volumes:
-            - C:\SQL\Data:/sqldata
-            - C:\SQL\SystemDbs:/var/opt/mssql/data
+            - ~/SQL/Data:/sqldata
+            - ~/SQL/SystemDbs:/var/opt/mssql/data
         environment:
             - ACCEPT_EULA=Y
             - SA_PASSWORD=letme!n123
