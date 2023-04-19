@@ -11,9 +11,11 @@ services:
     # Bring up the latest SQL Server
     sql:
         container_name: sql
+        user: root
         image: mcr.microsoft.com/azure-sql-edge:latest
         ports:
             - 1433:1433
+            - 1431:1431
         volumes:
             - ~/SQL/Data:/sqldata
             - ~/SQL/SystemDbs:/var/opt/mssql/data
@@ -30,7 +32,7 @@ services:
         container_name: redis
         image: redis:latest
         ports:
-            - 9000:6379
+            # - 9000:6379
             - 6379:6379
         networks:
             - DevelopmentNetwork
