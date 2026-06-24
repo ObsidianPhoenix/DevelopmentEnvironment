@@ -38,7 +38,19 @@ function Stop-Redis()
   docker-compose -f ~/Repos/DevelopmentEnvironment/docker-compose.yml stop redis redis-commander
 }
 
-alias -g stop-redis='Stop-Redis'
+function Start-Cosmos()
+{
+  docker-compose -f ~/Repos/DevelopmentEnvironment/docker-compose.yml up -d cosmos
+}
+
+alias -g start-redis='Start-Cosmos'
+
+function Stop-Cosmos()
+{
+  docker-compose -f ~/Repos/DevelopmentEnvironment/docker-compose.yml stop cosmos
+}
+
+alias -g stop-redis='Stop-Cosmos'
 
 function Update-DevEnvironment()
 {
@@ -46,3 +58,17 @@ function Update-DevEnvironment()
 }
 
 alias -g update-devenvionrment='Update-DevEnvironment'
+
+function Start-Android()
+{
+  docker-compose -f ~/Repos/DevelopmentEnvironment/docker-compose.yml up -d android-emulator
+}
+
+alias -g stop-redis='Start-Android'
+
+function Stop-Android()
+{
+  docker-compose -f ~/Repos/DevelopmentEnvironment/docker-compose.yml stop android-emulator
+}
+
+alias -g stop-redis='Stop-Android'

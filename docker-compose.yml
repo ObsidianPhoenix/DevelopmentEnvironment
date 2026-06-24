@@ -1,11 +1,9 @@
 # Please refer https://docs.docker.com/compose to learn more about Docker Compose.
-version: '3.4'
 
 networks: 
 
     DevelopmentNetwork:
         driver: bridge
-
 services:
 
     # Bring up the latest SQL Server
@@ -26,6 +24,13 @@ services:
             - MSSQL_LOG_DIR=/sqldata
         networks:
             - DevelopmentNetwork
+        restart: unless-stopped
+        healthcheck:
+            test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "letme!n123" -Q "SELECT 1" -b -o /dev/null
+            interval: 10s
+            timeout: 3s
+            retries: 10
+            start_period: 10s
             
     # Bring up the latest redis container
     redis:
@@ -36,6 +41,7 @@ services:
             - 6379:6379
         networks:
             - DevelopmentNetwork
+        restart: unless-stopped
             
     # This is a web-based redis management tool. Access it on localhost:8081
     redis-commander:
@@ -47,5 +53,90 @@ services:
             - 8081:8081
         depends_on: 
             - redis
+        networks:
+            - DevelopmentNetwork
+        restart: unless-stopped
+
+    # rabbit:
+    #     image: rabbitmq:3-management
+    #     ports:
+    #         - "15672:15672"
+    #     healthcheck:
+    #         test: rabbitmq-diagnostics check_port_connectivity
+    #         interval: 1s
+    #         timeout: 30s
+    #         retries: 60
+    #     restart: unless-stopped
+
+    # asb-emulator:
+    #     image: devopsifyme/sbemu:latest
+    #     environment:
+    #         - EMULATOR__RABBITMQ__HOST=rabbit
+    #         - EMULATOR__RABBITMQ__USERNAME=guest
+    #         - EMULATOR__RABBITMQ__PASSWORD=guest
+    #     ports:
+    #         - "5671:5671"
+    #     links: 
+    #         - rabbit
+    #     depends_on:
+    #         rabbit:
+    #             condition: service_healthy
+    #     restart: unless-stopped
+
+    # This is an emulator for Azure Blob Storage, Table and Queue services.
+    # https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite?tabs=docker-hub%2Cblob-storage
+    # https://hub.docker.com/r/microsoft/azure-storage-azurite
+    # https://github.com/Azure/Azurite/blob/main/README.md#certificate-configuration-https
+    azurite:
+        container_name: azurite
+        image: mcr.microsoft.com/azure-storage/azurite:latest
+        ports: 
+            - 10000:10000 # Blob
+            - 10001:10001 # Queue
+            - 10002:10002 # Table
+        command: azurite -l /workspace -d /workspace/debug.log --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
+        volumes:
+          - ~/azurite:/workspace
+        restart: unless-stopped
+
+    asb-emulator:
+        container_name: asb-emulator
+        image: mcr.microsoft.com/azure-messaging/servicebus-emulator:latest
+        ports:
+            - 5672:5672
+        volumes: 
+            - ~/ASB/:/ServiceBus_Emulator/ConfigFiles
+        environment:
+            SQL_SERVER: sql
+            MSSQL_SA_PASSWORD: letme!n123
+            ACCEPT_EULA: Y
+        depends_on:
+            sql:
+                condition: service_healthy
+        restart: unless-stopped
+        networks:
+            - DevelopmentNetwork
+
+    cosmos:
+        container_name: cosmos
+        image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
+        ports:
+            - 8081:8081
+            - 10250:10250
+            - 10251:10251
+            - 10252:10252
+            - 10253:10253
+            - 10254:10254
+            - 1234:1234
+        environment:
+            - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=1
+            - AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true
+            - PROTOCOL=http
+            - ENABLE_EXPLORER=true
+            - EXPLORER_PORT=1234
+            - EXPLORER_PROTOCOL=http
+        # volumes:
+        #     - ~/CosmosDB:/data
+        restart: unless-stopped
         networks:
             - DevelopmentNetwork
